@@ -123,3 +123,12 @@ Simpliest way to do this is real quick in Bash:
 Our command should be fairly similar to the `POST` command we used to fuzz for parameters, but our `FUZZ` keyword should be placed as the value of the parameter.
 
 
+
+**Notes for practical**
+
+three virtual hosts -> archive, faculty, test -> {}.academy.htb
+
+archive.academy.htb -> directory **/courses**
+
+faculty.academy.htb -> directories
+
