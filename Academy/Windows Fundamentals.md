@@ -226,8 +226,177 @@ Differ from standard user accounts as they do not require login credentials. The
 - `NT AUTHORITY\LocalService`
 - `NT AUTHORITY\NetworkService`
 
+### Interacting with the Windows OS
+**Graphical User Interface**
+The GUi was introduced in the 1970s by the Xerox Palo Alto research laboratory. Sysadmins commonly use GUI-based systems for administering Active Directory configuring IIS, or interacting with databases.
+
+**Remote Desktop Protocol (RDP)**
+A proprietary Microsoft protocol which allows users to connect to a remote system over a network connection and obtain a graphical user interface.
+
+**Windows Command Line**
+CLI gives greater control over the system and can be used to perform a wide variety of day-to-day tasks. Command Prompt (CMD) and PowerShell.
+
+**CMD**
+Is used to enter and execute commands, such as `ipconfig` to view IP address info or perform more advanced tasks such as setting up scheduled tasks or creating scripts and batch files. The binary is launched from `C:\Windows\System32\cmd.exe`
+
+Can type `help` to see a list of available commands.
+
+As well as `help <command>` to see how to use a command.
+
+`/?` is also an alternative to display the help content of a command.
+
+**PowerShell**
+Geared more sysadmins, is a command prompt as well as powerful scripting environment.
+
+**Cmdlets**
+PowerShell utilizes *cmdlets* which are small single-function tools built into the shell. There are more than 100 core cmdlets, and many additional ones have been written, or we can author our own to perform more complex tasks. PowerShell also supports both simple and complex scripts used for sysadmin tasks, automation and more.
+
+Cmdlets are in the form `Verb-Noun` such as `Get-ChildItem` can be used to list our current directory. Cmdlets also take arguments or flags. We can type `Get-ChildItem -` and hit the tab key to iterate through the arguments. A command such as `Get-ChildItem -Recurse` will show us the contents of our current working directory and all subdirectories. Or you can use `Get-ChildItem -Path <path>` to get the subdirectories of another location.
+
+**Aliases**
+Many cmdlets in PowerShell also have aliases. For example, the aliases for the cmdlet `Set-Location`, to change directories, is either `cd` or `sl`. Meanwhile the aliases for `Get-ChildItem` are `ls` and `gci`. We can view all available aliases by typing `Get-Alias`
+
+To set up a new alias `New-Alias -Name <name> <cmdlet>`
+
+`Get-Alias -Name "<name>"`
+
+The help system with PowerShell uses `Get-Help <cmdlet-name>` and has optional flags such as `-ShowWindow` or `-Online` to bring it up online.
+
+**Running Scripts**
+The PowerShell ISE (Integrated Scripting Environment) allows users to write PowerShell scripts on the fly. It also has an autocomplete/lookup function for PowerShell commands. The PowerShell ISE allows us to write and run scripts in the same console, which allows for quick debugging.
+
+One way to work with a script is to import it so that all the functions are then available in the current PowerShell console session. `Import-Module .\PowerView.ps1`.
+
+**Execution Policy**
+Sometimes we find that we are unable to run scripts on a system. This is due to a security feature that attempts to prevent the execution of malicious scripts called the execution policy. The possible policies are:
+
+- `AllSigned` -> All scripts can run, but a trusted publisher must sign scripts and config files.
+- `Bypass` -> No scripts or config files are blocked, and the user receives no warnings or prompts
+- `Default` -> Sets the default executio policy, `Restricted` for Windows desktop machines and `RemoteSigned` for Windows servers.
+- `RemoteSigned` -> Scripts can run but requires a digital signature on scripts that are downloaded from the internet. Not required when run locally scripts
+- `Restricted` -> Allows individual commands but does not allow scripts to be run. .ps1xml, .psm1, and ps1 are blocked
+- `Undefined` -> No execution policy is set for the current scope. If all scopes are this, then default policy of `Restricted` will be used.
+- `Unrestricted` -> Default execution policy for non-Windows computers and cannot be changed. Unsigned scripts can be run but warns the user before running scripts that are not from the local intranet zone.
+
+`Get-ExecutionPolicy -List` -> to get the execution policies
+
+`Set-ExecutionPolicy Bypass -Scope Process` -> Changes execution policy for the Process scope to Bypass
+
+### Windows Management Instrumentation (WMI)
+WMI is a subsystem of PowerShell that provides sysadmins with powerful tools for system monitoring. The goal of WMI is to consolidate device and application management across corporate networks. WMI is a core part of the Windows OS and has come pre-installed since Windows 2000.
+
+- WMI service: The WMI process, which runs automatically at boot and acts as the intermediary between WMI providers, the WMI repository, and managing applications.
+- Managed objects: Any logical or physical components that can be managed by WMI
+- WMI providers: Objects that monitor events/data related to a specific object.
+- Classes: used to pass data to WMI service
+- Methods:Attached to classes and allow actions to be performed.
+- WMI repository: A DB that stores all static data related to WMI
+- CMI Object Manager: System that requests data from WMI providers and returns it to the application requesting it.
+- WMI API: Enables applications to access the WMI infrastructure
+- WMI Consumer: Sends queries to objects via the CMI Object Manager.
+
+`wmic` can be used to launch an interactive wmi shell or use `wmic <command>` to run it inside CMD or PowerShell.
+
+`Invoke-WinMethod` module is used to call the methods of WMI objects. A simple example is renaming a file.
+
+`Invoke-WinMethod -Path <path> -Name Rename -ArgumentList <renamed>`
+
+### Microsoft Management Console (MMC)
+The MMC can be used to group snap-ins, or admin tools, to manage hardware, software, and network components within a Windows host. It has been around since Windows Server 2000 and runs on all Windows versions. We can also use MMC to create custom tools and distribute them to users. MMC works with the concept of snap-ins, allowing admins to create a customized console with only the admin tools needed to manage several services.
+
+### Windows Subsystem for Linux (WSL)
+WSL is a feature that allows Linux binaries to run natively on Windows 10 and Windows Server 2019. Was originally intended for developers who needed to run Bash, Ruby and native Linux commands such as `sed, awk, grep`, etc. on their Windows workstation. The second version of WSL was released in 2019 with a real Linux kernel using a subet of Hyper-V features.
+
+WSL can be installed by running the PowerShell command `Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux` as an administrator. 
+
+### Desktop Experience vs. Server Core
+Windows Server Core was released with Windows Server 2008 as a minimalistic Server environment only containing key Server functionality. As a result, Server Core has lower management, smaller attack service, etc.
+
+The Server Core or Desktop Experience must be selected at install beginning with Windows Server 2019, and neither can be rolled back. Once installed, the initial setup for Server Core can be done via `sconfig`. `Sconfig` is used for performing a wide variety of common commands such as configuring networking, checking for/installing Windows updates, account management, configuring remote management, activating Windows and more.
+
+### Windows Security
+A critical aspect to Windows OS. It has a many moving parts which means a vast attack surface. Windows can easily be misconfigured, thus opening  it up to attack even if they are fully patched.
+
+**Security Identifier (SID)**
+Each of the security principals on the system has a unique security identifer (SID). The system automatically generates SIDs. This means that even if, for example, we have two identical users on the system, Windows can distinguish the two and their rights based on their SIDs. They are strings of values with different lengths, which are stored in the security database. The SIDs are added to the user's access token to identify all actions that user is authorized to take.
+
+A SID consists of the identifier Authority and the Relative ID (RID). In an Active Directory domain environment, the SID also includes the domain SID.
+
+`whoami /user`
+
+The SID is broken down into the pattern
+`(SID)-(revision level)-(identifier-authority)-(subauthority1)-(sa2)-(etc)`
+
+Let's break down the SID piece by piece:
+
+- S -> SID -> Identifies the string as a SID
+- 1 -> Revision Level -> To date, this has never changed and has always been `1`.
+- 5 -> Identifier Authority -> A 48-bit string that identifies the authority that created the SID.
+- 21 -> Subauthority1  -> Identifies the user's relation or group described by the SID to the authority that created it. It tells us in what order this authority created the user's account.
+- 674899381-4069889467-2080702030 -> Subauthority2 -> Tells us which computer (or domain) created the number.
+- 1002 -> Subauthority3 -> The RID that distinguishes one account from another. Tells us whether this user is a normal user, a guest, an admin, or part of some other group.
+
+**Security Accounts Manager (SAM) and Access Control Entities (ACE)**
+SAM grants rights to a network to execute specific processes.
+
+The access rights themselves are managed by Access Control Entries (ACE) in Access Control Lists (ACL). The ACLs contain ACEs that define which users, groups or processes have access to a file or to execute a process, for example.
+
+The permission to access a securable object are given by the security descriptor, classified into two types of ACLs: the `DACL` or `SACL`. Every threat and process started or initiated by a user goes through an authorization process. An integral part of this process is access tokens, validated by the Local Security Authority (LSA). In addition to the SID, these access tokens contain other security-relevant information.
+
+**User Account Control (UAC)**
+Prevents a user from running an executable until there is admin approval. A pop up is created before something is executed.
 
 
+**Registry**
 
+The `Registry` is a hierarchal database in Windows critical for the operating system. It stores low-level settings for the Windows OS and applications that choose to use it. It is divided into computer-specific and user-specific data. We can open the Registry Editor by typing `regedit` form the command-line or search bar.
 
+The tree-structure consists of main folders (root keys) in which subfolders (subkeys) with their entries/files (values) are located. There are 11 different types of values that can be entered in a subkey.
+
+- REG_BINARY: Binary data in any form
+- REG_DWORD: A 32-bit number
+- REG_DWORD_LITTLE_ENDIAN: A 32-bit number written in little endian form.
+- REG_DWORD_BIG_ENDIAN: A 32-bit number written in big endian form
+- REG_EXPAND_SZ: A null-terminated string containing unexpanded references to environment variables (for ex-> %PATH%).
+- REG_LINK: Unicode string containing the target path of a symbolic link created by calling the `RegCreateKeyEx` function with REG_OPTION_CREATE_LINK.
+- REG_MULTI_SZ: A sequence of null-terminated strings, terminated by an empty string (\0).
+- REG_NONE: no defined value type
+- REG_QWORD: 64-bit number
+- REG_QWORD_LITTLE_ENDIAN: 64-bit number in little endian format.
+- REG_SZ: A null-terminated string.
+
+Each folder under `Computer` is a key. The root keys all start with `HKEY`. A key such as `HKEY-LOCAL-MACHINE` is abbreviated to `HKLM`. This contains all settings that are relevant to the local system. The root key contains six subkeys like `SAM, SECURITY, SYSTEM, SOFTWARE, HARDWARE, BCD`, loaded into memory at boot time (except `HARDWARE` which is dynamically loaded).
+
+The entire system registry is stored in several files on the OS. You find these under `C:\Windows\System32\Config\`
+
+The user-specific registry hive (HKCU) is stored in the user folder `C:\Windows\Users\<USERNAME>\Ntuser.dat`
+
+**Run and RunOnce Registry Keys**
+There are also so-called registry hives, which contain a logical group of keys, subkeys and values to support software and files loaded into memory when the OS is started or a user logs in. These are useful for maintaining access to the system. Run and RunOnce registry keys.
+
+	HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run
+	HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+	HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce
+	HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\RunOnce
+
+**Application Whitelisting**
+
+A list of approved software applications or executables allowed to be present and run on a system. The goal is to protect the environment from harmful malware and unapproved software that does not align with specific business needs of an organization.
+
+Blacklisting in contrast, specifies a list of disallowed software/applications to block while whitelisting is a "zero trust" environment.
+
+**AppLocker**
+Microsoft's application whitelisting solution and was first introducted in Windows 7. Gives sysadmins control over which applications and files a user can run. It gives granular control over executables, scripts, Windows installer files, DLLs, packaged apps and packed app installers.
+
+**Local Group Policy**
+
+Group Policy allows admins to set, configure, and adjust a variety of settings. In a domain environment, group policies are pushed down from a domain controller onto all domain-joined machines that Group Policy objects (GPOs) are linked to. These settings can also be configured on individual machines using Local Group Policy.
+
+`gpedit.msc`
+
+Is split into `Computer Configuration` and `User Configuration`
+
+**Windows Defender**
+
+`Get-MpComputerStatus` to check which protection settings are enabled.
 
