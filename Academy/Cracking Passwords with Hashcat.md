@@ -180,4 +180,88 @@ Another tool to create custom wordlists. It spiders and scrapes a website and cr
 Can also extract emails from websites with the `-e` option.
 
 ### Working with Rules
+The rule-based attack is the most advanced and complex password cracking mode. Rules help perform various operations on the input wordlist, such as prefixing, suffixing, toggling case, cutting, reversing, and much more. Rules take mask-based attacks to another level and provide increased cracking rates. Additionally, the usage of rules saves disk space and processing time incurred as a result of larger wordlists.
 
+A rule can be created using functions, which take a word as input and output its modified version. The following table describes functions which are compatible with JtR as well as Hashcat.
+
+**Function -> Description -> Input -> Output**
+- l -> convert all letters to lowercase -> InlaneFreight2020 -> inlanefreight2020
+- u -> convert all letters to uppercase -> InlaneFreight2020 -> INLANEFREIGHT2020
+- c / C -> capitalize / lowercase first letter and invert rest
+- t / TN -> Toggle case: whole word / at position N
+- d / q / zN / ZN -> Duplicate word / all characters / first character / last character
+- {/} -> Rotate word left / right
+- ^X / $X -> Prepend / Append character X
+- r -> Reverse
+
+### Common Hash Types
+During pentest engagements, we encounter a wide variety of hash types; some are extremely common and seen on most engagements, while others are seen very rarely or not at all.
+
+**Hashmode -> Hash Name -> Example Hash**
+- 0 -> MD5 -> `8743b52063cd84097a65d1633f5c74f5`
+- 100 -> SHA1 -> `b89eaac7e61417341b710b727768294d0e6a277b`
+- 1000 -> NTLM -> `b4b9b02e6f09a9bd760f388b67351e2b`
+- 1800 -> sha512crypt -> `$6$52450745$k5ka2p8bFuSmoVT1tzOyyuaREkkKBcCNqoDKzYiJL9RaE8yMnPgh2XzzF0NDrUhgrcLwg78xs1w5pJiypEdFX/`
+- 3200 -> bcrypt Blowfish(Unix) ->`$2a$05$LhayLxezLhK1LhWvKxCyLOj0j1u.Kj0jZ0pEmm134uzrQlFvQJLF6`
+- 5500 -> NetNTLMv1 -> `u4-netntlm::kNS:338d08f8e26de93300000000000000000000000000000000:9526fb8c23a90751cdd619b6cea564742e1e4bf33006ba41:cb8086049ec4736c`
+- 5600 -> NetNTLMv2 -> `admin::N46iSNekpT:08ca45b7d7ea58ee:88dcbe4446168966a153a0064958dac6:5c7830315c7830310000000000000b45c67103d07d7b95acd12ffa11230e0000000052920b85f78d013c31cdb3b92f5d765c783030`
+- 13100 Kerberos 5 TGS -> `$krb5tgs$23$user$realm$test/spn$63386d22d359fe42230300d56852c9eb$ < SNIP >`
+
+##### NetNTLMv2
+During a pentest it is commonto run tools such as *Responder* to perform MITM attacks to attempt to "steal" credentials. In busy corporate networks it is common to retrieve many NetNTLMv2 password hashes using this method.
+
+### Cracking Miscellaneous Files & Hashes
+
+It's common to come across password protected documents such as Microsoft Word and Excel documents, KeePass database files, SSH private keys, PDF files, zip files, etc.
+
+##### Tools
+Various tools come with an option to output in a format that `Hashcat` can understand. `JohnTheRipper` also comes with a lot of tools to convert things to a format that `John` can crack.
+
+##### Examples
+
+Microsoft Office Documents -> *office2john.py* tool
+
+Protected Zip Files -> *zip2john* tool
+
+KeePass Files -> *keepass2john.py* tool
+
+PDF files -> *pdf2john.py* tool
+
+
+### Cracking Wireless (WPA/WPA2) Handshake
+Another example is a wireless security assessment. Clients often ask for wireless assessments as part of an internal penetration test. While wireless is not always the most exciting, it can get interesting if you can capture a WPA/WPA2 handshake.
+
+`Hashcat` can be used to successfuly crack both the MIC (4-way handshake) and PMKID (1st packet/handshake)
+
+##### Cracking MIC
+When a client connecting to the wireless network and the wireless access point (AP) communicate, they must ensure that they both have/know the wireless network key but are not transmitting the key across the network. The key is encrypted and verified by the AP.
+
+These keys are used to generate a common key called the Message Integrity Check (MIC) used by an AP to verify each packet has not been compromised and receieved in its original state.
+
+The 4-way handshake is illustrated in the following diagram:
+![[Pasted image 20220503110755.png]]
+
+Once you capture a 4-way handshake with a tool like `airodump-ng` you need to convert it to a form that can be supplied to `hashcat` for cracking. The format required is *hccapx*, and hashcat hosts an online service to convert to this format: *cap2hashcat online*. To perform offline, you need `hashcat-utils`
+
+##### Cracking PMKID
+This attack can be performed against wireless networks that use WPA/WPA2-PSK (pre-shared key) and allows us to obtain the PSK being used by the target wireless network by attacking the AP directly. The attack does not require deauthentication (deauth) of any users from the target AP. The PMK is the same as in the MIC (4-way handshake) attack but can generally be obtained faster and without interrrupting users.
+
+The Pairwise Master Key Identifier  (PMKID) is the AP's unique identifier to keep track of the Pairwise Master Key (PMK) used by the client. The PMKID is located in the 1st packet of the 4-way handshake and can be easier to obtain since it does not require capturing the entire handshake. The PMKID is calculated with HMAC-SHA1 with the PMK (Wireless network password) used as a key, the string "PMK Name", MAC address of the access point, and the MAC address of the station.
+
+![[Pasted image 20220503111541.png]]
+
+To perform PMKID cracking, we need to obtain the mpkid hash. The first step is extracting it from the capture (.cap) file using a tool such as `hcxpcaptool` from `hcxtools` You can install `hcxtools` with `sudo apt install hcxtools`
+
+Example:
+`hcxpcaptool -z pmkidhash_corp cracking_pmkid.cap`
+
+Hashcat - cracking PMKID
+`hashcat -a 0 -m 22000 pmkidhash <wordlist>`
+
+
+### Skills Assessment
+
+1. Your colleague performed a successful SQL injection and obtained a hash. You must first identify the hash type and then crack the hash and provide the cleartext value. -> `Flower1`
+2. The cracked hash from the SQL injection attack paid off, and your colleague was able to gain a foothold on the internal network! They have been running the Responder tool and collecting a variety of hashes. They have been unable to perform a successful SMB Relay attack, so they need to obtain the cleartext password to gain a foothold in the Active Directory environment. Crack the provided NetNTLMv2 hash to help them proceed. `bubbles1`
+3. Great! Your colleague was able to use the cracked password and perform a Kerberoasting attack. One of the Kerberos TGS tickets retrieved is for a user that is a member of the Local Administrators group on one server. Can you help them crack this hash and move laterally to this server? `p@ssw0rdadmin`
+4. Your colleague was able to access the server and obtain the local SAM database's contents. One of the hashes is the Domain Cached credentials for a Domain Administrator user. This hash is typically very difficult to crack but, if successful, will grant full administrative control over the entire Active Directory Environment.
